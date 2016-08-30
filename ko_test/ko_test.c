@@ -78,12 +78,20 @@ static ssize_t kk_test_store_state(struct device_driver *driver, const char *buf
 				return -EINVAL;
 		}
 		if (kk_test_state1 == 1){
-				res = snprintf(buf, PAGE_SIZE, "the result is %d\n", kk_test_state1);
+				//res = snprintf(buf, PAGE_SIZE, "the result is %d\n", kk_test_state1);
 				//int_param = kk_test_state1;
+				pinctrl_select_state(kk_test_pin,pinctrl_kk_test_def_high);
+				pinctrl_select_state(kk_test_pin,pinctrl_kk_test_set_low);
 		}
-		else 
-				res = snprintf(buf, PAGE_SIZE, "enter error!!!!!%d\n", kk_test_state1);
-			
+		else if (kk_test_state1 == 2)
+		{
+				pinctrl_select_state(kk_test_pin,pinctrl_kk_test_def_low);
+				pinctrl_select_state(kk_test_pin,pinctrl_kk_test_set_high);
+		}else{ 
+				pinctrl_select_state(kk_test_pin,pinctrl_kk_test_def_low);
+				pinctrl_select_state(kk_test_pin,pinctrl_kk_test_set_low);
+				//res = snprintf(buf, PAGE_SIZE, "enter error!!!!!%d\n", kk_test_state1);
+		}	
 			return kk_test_state1;
 				
 }
@@ -156,9 +164,7 @@ static int kk_test_get_gpio_info(struct platform_device *pdev)
 				
 				printk("====kk_test===check en is %d ,en mode is %d,el pin is %d,el mode is %d== \n",kk_test_en,kk_test_en_mode,kk_test_el,kk_test_el_mode);												
 		}		
-		
-		
-				
+						
 		kk_test_pin = devm_pinctrl_get(&pdev->dev);
 		if(IS_ERR(kk_test_pin)){
 				ret = PTR_ERR(kk_test_pin);
