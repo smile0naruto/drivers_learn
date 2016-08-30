@@ -16,6 +16,22 @@ module_param_array(array_param, int, &num, 0644);
 static char kk_test_state1;
 static struct device *kk_test_dev;
 
+struct device_node *kk_test_node;
+static unsigned int kk_test_en;
+static unsigned int kk_test_en_mode;
+static unsigned int kk_test_en_if_config = 1;
+static unsigned int kk_test_el;
+static unsigned int kk_test_el_mode;
+static unsigned int kk_test_el_if_config = 1;
+
+struct pinctrl *kk_test_pin;
+struct pinctrl_state *pinctrl_kk_test_def;
+struct pinctrl_state *pinctrl_kk_test_def_low;
+struct pinctrl_state *pinctrl_kk_test_def_high;
+struct pinctrl_state *pinctrl_kk_test_set;
+struct pinctrl_state *pinctrl_kk_test_set_low;
+struct pinctrl_state *pinctrl_kk_test_set_high;
+
 static int kk_test_probe(struct platform_device *pdev);
 static int kk_test_remove(struct platform_device *pdev);
 
@@ -63,7 +79,7 @@ static ssize_t kk_test_store_state(struct device_driver *driver, const char *buf
 		}
 		if (kk_test_state1 == 1){
 				res = snprintf(buf, PAGE_SIZE, "the result is %d\n", kk_test_state1);
-				int_param = kk_test_state1;
+				//int_param = kk_test_state1;
 		}
 		else 
 				res = snprintf(buf, PAGE_SIZE, "enter error!!!!!%d\n", kk_test_state1);
@@ -116,11 +132,88 @@ static int kk_test_delete_attr(struct device_driver *driver)
 }
 #endif
 
+static int kk_test_get_gpio_info(struct platform_device *pdev)
+{
+		int ret;
+		
+		kk_test_node = of_find_compatible_node(NULL, NULL, "kk,kk_test");		
+		if (kk_test_node == NULL) {
+				printk("KK_TEST - get kk_test node failed\n");
+		} else {
+				if (of_property_read_u32_index(kk_test_node, "kk_test_en", 0, &kk_test_en)) {
+						kk_test_en_if_config = 0;
+						printk("get dtsi kk_test_en fail\n");
+				}
+				if (of_property_read_u32_index(kk_test_node, "kk_test_en", 1, &kk_test_en_mode))
+						printk("get dtsi kk_test_en_mode fail\n");
+
+				if (of_property_read_u32_index(kk_test_node, "kk_test_el", 0, &kk_test_el)) {
+						kk_test_el_if_config = 0;
+						printk("get dtsi kk_test_el fail\n");
+				}
+				if (of_property_read_u32_index(kk_test_node, "kk_test_el", 1, &kk_test_el_mode))
+						printk("get dtsi kk_test_el_mode fail\n");
+				
+				printk("====kk_test===check en is %d ,en mode is %d,el pin is %d,el mode is %d== \n",kk_test_en,kk_test_en_mode,kk_test_el,kk_test_el_mode);												
+		}		
+		
+		
+				
+		kk_test_pin = devm_pinctrl_get(&pdev->dev);
+		if(IS_ERR(kk_test_pin)){
+				ret = PTR_ERR(kk_test_pin);
+				printk("can't find kk_test pinctrl!\n");
+		}
+		
+		pinctrl_kk_test_def = pinctrl_lookup_state(kk_test_pin, "kk_test_gpio_default");
+		if (IS_ERR(pinctrl_kk_test_def)) {
+				ret = PTR_ERR(pinctrl_kk_test_def);
+				printk("Cannot find pinctrl_kk_test_def pinctrl!\n");
+		}		
+		
+		pinctrl_kk_test_def_low = pinctrl_lookup_state(kk_test_pin, "kk_test_gpio_default_low");
+		if (IS_ERR(pinctrl_kk_test_def_low)) {
+				ret = PTR_ERR(pinctrl_kk_test_def_low);
+				printk("Cannot find pinctrl_kk_test_def_low pinctrl!\n");
+		}
+		
+		pinctrl_kk_test_def_high = pinctrl_lookup_state(kk_test_pin, "kk_test_gpio_default_high");
+		if (IS_ERR(pinctrl_kk_test_def_high)) {
+				ret = PTR_ERR(pinctrl_kk_test_def_high);
+				printk("Cannot find pinctrl_kk_test_def_high pinctrl!\n");
+		}
+
+		pinctrl_kk_test_set = pinctrl_lookup_state(kk_test_pin, "kk_test_gpio_set");
+		if (IS_ERR(pinctrl_kk_test_set)) {
+				ret = PTR_ERR(pinctrl_kk_test_set);
+				printk("Cannot find pinctrl_kk_test_set pinctrl!\n");
+		}	
+		
+		pinctrl_kk_test_set_low = pinctrl_lookup_state(kk_test_pin, "kk_test_gpio_set_low");
+		if (IS_ERR(pinctrl_kk_test_set_low)) {
+				ret = PTR_ERR(pinctrl_kk_test_set_low);
+				printk("Cannot find pinctrl_kk_test_set_low pinctrl!\n");
+		}
+		
+		pinctrl_kk_test_set_high = pinctrl_lookup_state(kk_test_pin, "kk_test_gpio_set_high");
+		if (IS_ERR(pinctrl_kk_test_set_high)) {
+				ret = PTR_ERR(pinctrl_kk_test_set_high);
+				printk("Cannot find pinctrl_kk_test_set_high pinctrl!\n");
+		}		
+	
+		return 0;
+}
+
+
+
 static int kk_test_probe(struct platform_device *pdev)
 {
 	
 		int i,err = 0;
 		printk("\n\n\n\n====welcome to kk world!!!\n\n\n\n");
+			
+		kk_test_get_gpio_info(pdev);
+		
 #ifdef DEVICE_CREAT
 		err = device_create_file(&pdev->dev, &dev_attr_kk_test_state);		//dev_attr driver_attr_kk_test_state
 		if (err < 0 )
