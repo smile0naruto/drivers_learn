@@ -31,6 +31,7 @@ do {\
 
 //#define DEVICE_CREAT
 #define USE_LEDS_C
+#define USE_WORKQUEUE
 #define SIZE 10
 static int int_param;
 static char *string_param;
@@ -42,6 +43,7 @@ module_param_array(array_param, int, &num, 0644);
 static char kk_test_state1;
 //static struct device *kk_test_dev;
 
+/*********for gpio************/
 struct device_node *kk_test_node;
 static unsigned int kk_test_en;
 static unsigned int kk_test_en_mode;
@@ -49,7 +51,6 @@ static unsigned int kk_test_en_if_config = 1;
 static unsigned int kk_test_el;
 static unsigned int kk_test_el_mode;
 static unsigned int kk_test_el_if_config = 1;
-
 struct pinctrl *kk_test_pin;
 struct pinctrl_state *pinctrl_kk_test_def;
 struct pinctrl_state *pinctrl_kk_test_def_low;
@@ -58,11 +59,20 @@ struct pinctrl_state *pinctrl_kk_test_set;
 struct pinctrl_state *pinctrl_kk_test_set_low;
 struct pinctrl_state *pinctrl_kk_test_set_high;
 
+/*********for input device********/
 struct input_dev *kk_test_input_dev;
+
+/********for irq ******************/
 static int kk_test_hall_flag = 0;
 unsigned int kk_test_hall_irq = 0;
 static DECLARE_WAIT_QUEUE_HEAD(kk_test_hall_waiter);
 static struct task_struct *kk_test_hall_thread = NULL;
+
+/*************for workqueue********************/
+#ifdef USE_WORKQUEUE
+struct work_struct kk_test_wq;
+static struct workqueue_struct *kk_test_workqueue;
+#endif
 
 static int kk_test_probe(struct platform_device *pdev);
 static int kk_test_remove(struct platform_device *pdev);
@@ -284,9 +294,14 @@ static int kk_test_get_gpio_info(struct platform_device *pdev)
 
 static irqreturn_t kk_test_hall_eint_handler(unsigned irq, struct irq_desc *desc)
 {
+#ifndef USE_WORKQUEUE
     disable_irq_nosync(kk_test_hall_irq);
     kk_test_hall_flag = 1;
     wake_up_interruptible(&kk_test_hall_waiter);
+#else
+  schedule_work(&kk_test_wq);
+  disable_irq_nosync(kk_test_hall_irq);
+#endif
 
     return IRQ_HANDLED;
 }
@@ -362,7 +377,7 @@ static void kk_test_hall_handler(void)
   		}
   	}
 }
-
+#ifndef USE_WORKQUEUE
 static int kk_test_hall_event_handler(void *unused)
 {
 	struct sched_param param = {.sched_priority = 4};
@@ -381,6 +396,7 @@ static int kk_test_hall_event_handler(void *unused)
 
     return 0;
 }
+#endif
 
 static void kk_test_init_irq(void)
 {   
@@ -389,13 +405,15 @@ static void kk_test_init_irq(void)
 		struct device_node *node = NULL;
 		
 		kk_log(KK_TEST_CRTI,"===kk_test==%s==%d==\n",__func__,kk_test_en);
-
+		
+#if 0
 	  kk_test_hall_thread = kthread_run(kk_test_hall_event_handler, 0, "kk_test_hall");
     if (IS_ERR(kk_test_hall_thread))
     { 
         kk_log(KK_TEST_CRTI,"%s() creat thread fail!!\n",__func__);
     }		
-    	
+#endif 
+   	
 		    /*gpio*/
 		ret = gpio_request(kk_test_en, "gpio_hall_eint");
 		if (ret < 0)
@@ -419,6 +437,9 @@ static void kk_test_init_irq(void)
 						ret = -1;
 						kk_log(KK_TEST_CRTI,"kk_test_hall request_irq IRQ LINE NOT AVAILABLE!.\n");
 				}
+				#ifdef USE_WORKQUEUE
+				enable_irq(kk_test_hall_irq);
+				#endif 
 		} else {
 				kk_log(KK_TEST_CRTI,"kk_test_hall request_irq can not find touch eint device node!.\n");
 				ret = -1;
@@ -426,7 +447,14 @@ static void kk_test_init_irq(void)
 		kk_log(KK_TEST_CRTI,"[%s]irq:%d, debounce:%d-%d:\n", __func__, kk_test_hall_irq, ints[0], ints[1]);
 #endif	
 }
-
+#ifdef USE_WORKQUEUE
+static void kk_test_wq_func(void)
+{
+	kk_log(KK_TEST_CRTI,"==kk_test==%s=====\n\n",__func__);
+	kk_test_hall_handler();
+	enable_irq(kk_test_hall_irq); 
+}
+#endif
 
 static int kk_test_probe(struct platform_device *pdev)
 {
@@ -454,6 +482,18 @@ static int kk_test_probe(struct platform_device *pdev)
           input_free_device(kk_test_input_dev);
           return err;
       }	
+      
+#ifndef USE_WORKQUEUE	
+	  kk_test_hall_thread = kthread_run(kk_test_hall_event_handler, 0, "kk_test_hall");
+    if (IS_ERR(kk_test_hall_thread))
+    { 
+        kk_log(KK_TEST_CRTI,"%s() creat thread fail!!\n",__func__);
+    }			
+#else				
+		kk_test_workqueue = create_singlethread_workqueue("kk_test");
+		INIT_WORK(&kk_test_wq, kk_test_wq_func);
+#endif
+		
 		kk_test_init_irq();
 		
 #ifdef DEVICE_CREAT
