@@ -406,7 +406,7 @@ static void kk_test_init_irq(void)
 		
 		kk_log(KK_TEST_CRTI,"===kk_test==%s==%d==\n",__func__,kk_test_en);
 		
-#if 0
+#ifndef USE_WORKQUEUE 
 	  kk_test_hall_thread = kthread_run(kk_test_hall_event_handler, 0, "kk_test_hall");
     if (IS_ERR(kk_test_hall_thread))
     { 

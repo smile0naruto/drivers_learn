@@ -1,0 +1,173 @@
+diff --git a/alps/kernel-3.18/arch/arm64/boot/dts/kon6737m_r9_65_n.dts b/alps/kernel-3.18/arch/arm64/boot/dts/kon6737m_r9_65_n.dts
+index 0be0525..c3a132a 100644
+--- a/alps/kernel-3.18/arch/arm64/boot/dts/kon6737m_r9_65_n.dts
++++ b/alps/kernel-3.18/arch/arm64/boot/dts/kon6737m_r9_65_n.dts
+@@ -829,3 +829,79 @@
+ };
+ 
+ /*MICROARRAY FINGERPRINT GPIO end*/
++
++
++/* KKTEST Kernal Standardization START */
++
++&pio{
++	kk_test_gpio_default: kk_test_init {
++			pins_cmd_dat {
++			pins = <PINMUX_GPIO42__FUNC_GPIO42>;
++			slew-rate = <1>;
++			bias-pull-down = <00>;
++		};
++	};
++	kk_test_gpio_default_low: kk_test_low {
++			pins_cmd_dat {
++			pins = <PINMUX_GPIO42__FUNC_GPIO42>;
++			slew-rate = <1>;
++			output-low;
++			bias-pull-down = <00>;
++		};
++	};
++	kk_test_gpio_default_high: kk_test_high {
++			pins_cmd_dat {
++			pins = <PINMUX_GPIO42__FUNC_GPIO42>;
++			slew-rate = <1>;
++			output-high;
++			bias-pull-down = <00>;
++		};
++	};
++	kk_test_gpio_set: kk_test_set_init {
++			pins_cmd_dat {
++			pins = <PINMUX_GPIO80__FUNC_GPIO80>;
++			slew-rate = <1>;
++			bias-pull-down = <00>;
++		};
++	};
++	kk_test_gpio_set_low: kk_test_set_low {
++			pins_cmd_dat {
++			pins = <PINMUX_GPIO80__FUNC_GPIO80>;
++			slew-rate = <1>;
++			output-low;
++			bias-pull-down = <00>;
++		};
++	};
++	kk_test_gpio_set_high: kk_test_set_high {
++			pins_cmd_dat {
++			pins = <PINMUX_GPIO80__FUNC_GPIO80>;
++			slew-rate = <1>;
++			output-high;
++			bias-pull-down = <00>;
++		};
++	};
++};
++
++
++&kk_test{
++	kk_test_en = <3 0>;
++	kk_test_el = <80 0>;
++	pinctrl-names = "kk_test_gpio_default","kk_test_gpio_default_low","kk_test_gpio_default_high","kk_test_gpio_set","kk_test_gpio_set_low","kk_test_gpio_set_high";
++	pinctrl-0 = <&kk_test_gpio_default>;
++	pinctrl-1 = <&kk_test_gpio_default_low>;
++	pinctrl-2 = <&kk_test_gpio_default_high>;
++	pinctrl-3 = <&kk_test_gpio_set>;
++	pinctrl-4 = <&kk_test_gpio_set_low>;
++	pinctrl-5 = <&kk_test_gpio_set_high>;
++	status = "okay";
++};
++
++/*
++&0x1100A000{
++	kk_test@0{
++				reg = <0>;
++				compatible = "kk,kk_test";
++		};
++};
++*/
++/* KKTEST Kernal Standardization END */
+\ No newline at end of file
+diff --git a/alps/kernel-3.18/arch/arm64/boot/dts/mt6735m.dtsi b/alps/kernel-3.18/arch/arm64/boot/dts/mt6735m.dtsi
+index 13006b8..70406ff 100644
+--- a/alps/kernel-3.18/arch/arm64/boot/dts/mt6735m.dtsi
++++ b/alps/kernel-3.18/arch/arm64/boot/dts/mt6735m.dtsi
+@@ -614,6 +614,16 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
+ 			spi-padmacro = <0>;
+ 			reg = <0x1100a000 0x1000>;
+ 			interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>;
++/*						
++      kk_test@1 {
++        #address-cells = <1>;
++        #size-cells = <1>;
++				compatible = "kk,kk_test";     //
++        reg = <1 0>;
++        linux,modalias = "kk_test", "kk_test";
++        spi-max-frequency = <10000000>;
++      };			
++*/      
+ 		};
+ 
+ 		btif_tx:btif_tx@11000780 {
+@@ -677,7 +687,14 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
+ 		/*konka add for hall sensor*/
+ 		hall_1: hall_1 {
+ 			compatible = "mediatek, hall_1-eint";
++			status = "disabled";
++		};
++		
++		/* KKTEST Kernal Standardization START */
++		kk_test: kk_test{
++			compatible = "kk,kk_test";
+ 		};
++		/* KKTEST Kernal Standardization END */		
+ 	};
+ 
+ 	bus {
+diff --git a/alps/kernel-3.18/arch/arm64/configs/kon6737m_r9_65_n_debug_defconfig b/alps/kernel-3.18/arch/arm64/configs/kon6737m_r9_65_n_debug_defconfig
+index fe1e3b0..9d2e40f 100644
+--- a/alps/kernel-3.18/arch/arm64/configs/kon6737m_r9_65_n_debug_defconfig
++++ b/alps/kernel-3.18/arch/arm64/configs/kon6737m_r9_65_n_debug_defconfig
+@@ -513,4 +513,5 @@ CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
+ CONFIG_LIBCRC32C=y
+ CONFIG_MTK_DISABLE_SODI=y
+ # PROJECT MACRO
+-CONFIG_CUSTOM_KERNEL_PHONE_MACRO="__M3710__ __R9_PROJ__ __KONKA_HALL_CONTOL__ __KONKA_GESTURE_CONTOL__ KONKA_VERSION_CONTROL"
++CONFIG_CUSTOM_KERNEL_PHONE_MACRO="__M3710__ __R9_PROJ__ __KONKA_GESTURE_CONTOL__ KONKA_VERSION_CONTROL __KK_TEST__"
++#CONFIG_CUSTOM_KERNEL_PHONE_MACRO="__M3710__ __R9_PROJ__ __KONKA_HALL_CONTOL__ __KONKA_GESTURE_CONTOL__ KONKA_VERSION_CONTROL"
+diff --git a/alps/kernel-3.18/drivers/Makefile b/alps/kernel-3.18/drivers/Makefile
+index 3097e13..aa63f00 100644
+--- a/alps/kernel-3.18/drivers/Makefile
++++ b/alps/kernel-3.18/drivers/Makefile
+@@ -5,6 +5,7 @@
+ # Rewritten to use lists instead of if-statements.
+ #
+ 
++obj-y				+= kk_test/
+ obj-y				+= irqchip/
+ obj-y				+= bus/
+ 
+@@ -167,4 +168,4 @@ obj-$(CONFIG_THUNDERBOLT)	+= thunderbolt/
+ #konka add for project macro
+ CUSTOM_KERNEL_FLAGS := $(addprefix -D, $(shell echo \
+              $(CONFIG_CUSTOM_KERNEL_PHONE_MACRO) | tr a-z A-Z))
+-subdir-ccflags-y += $(CUSTOM_KERNEL_FLAGS)
+\ No newline at end of file
++subdir-ccflags-y += $(CUSTOM_KERNEL_FLAGS)
+diff --git a/alps/kernel-3.18/drivers/misc/mediatek/leds/mt6735/leds.c b/alps/kernel-3.18/drivers/misc/mediatek/leds/mt6735/leds.c
+index 175f5e7..7a9c667 100644
+--- a/alps/kernel-3.18/drivers/misc/mediatek/leds/mt6735/leds.c
++++ b/alps/kernel-3.18/drivers/misc/mediatek/leds/mt6735/leds.c
+@@ -795,7 +795,7 @@ int mt_brightness_set_pmic_duty_store(u32 level, u32 div)
+ 	return -1;
+ }
+ 
+-#if defined(__KONKA_HALL_CONTOL__)
++#if defined(__KONKA_HALL_CONTOL__) || defined(__KK_TEST__)
+ static int giLcdBLLev = 255;
+ int backlight_is_off(void)
+ {
+@@ -823,7 +823,7 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
+ //#endif
+ 
+ 
+-#if defined(__KONKA_HALL_CONTOL__)
++#if defined(__KONKA_HALL_CONTOL__) || defined(__KK_TEST__)
+     if (strcmp(cust->name,"lcd-backlight") == 0)
+     {
+         giLcdBLLev = level;
